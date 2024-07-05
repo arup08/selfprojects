@@ -1,0 +1,79 @@
+
+module BOOTH(
+    input ldA,
+    input clrA,
+    input shftA,
+    input ldQ,
+    input clrQ,
+    input shftQ,
+    input clrff,
+    output qm1,
+    input [15:0] data_in,
+    output eqz,
+    input clk,
+    input ldcnt,
+    input dec,
+    input addsub,
+    input ldM
+    );
+    wire [15:0] outA,outQ,outM,outALU;
+    wire [4:0] count;
+    assign eqz= ~&count;
+    shift_reg A (outA,outALU,clk,ldA,clrA,shftA,outA[15]);
+    shift_reg Q (outQ,data_in,clk,ldQ,clrQ,shftQ,outA[0]);
+    dff ff(qm1,outQ[0],clk,clrff);
+    PIPO M (outM,data_in,clk,ldM);
+    ALU alu(outALU,outA,outM,addsub);
+    counter COUNTER(count,dec,ldcnt,clk);
+endmodule
+
+module shift_reg(data_out,data_in,clk,ld,clr,shft,s_in);
+input ld,clr,shft,clk,s_in;
+input [15:0]data_in;
+output reg [15:0] data_out;
+always @ (posedge clk)
+begin
+if(clr) data_out<= 0;
+else if(ld) data_out <= data_in;
+else if(shft) data_out <= {s_in,data_out[15:1]};
+end
+endmodule
+
+module dff(q,d,clk,clr);
+input d,clr,clk;
+output reg q;
+always @ (posedge clk)
+begin
+if(clr) q<= 0;
+else q <= d;
+end
+endmodule
+
+module ALU(result,operand1,operand2,addsub);
+input [15:0] operand1,operand2;
+output reg [15:0] result;
+input addsub;
+always @ (*)
+begin 
+if(addsub) result<=operand1+operand2;
+else result<=operand1-operand2;
+end
+endmodule
+
+module PIPO(d_out,d_in,clk,ld);
+input [15:0] d_in;
+input ld,clk;
+output reg [15:0] d_out;
+always @ (posedge clk)
+if(ld) d_out<=d_in;
+endmodule
+
+module counter(d_out,decr,ld,clk);
+input clk,ld,decr;
+output reg [4:0] d_out;
+always @ (posedge clk)
+begin
+if(ld) d_out<=5'b10000;
+else if(decr) d_out<=d_out-1;
+end
+endmodule
